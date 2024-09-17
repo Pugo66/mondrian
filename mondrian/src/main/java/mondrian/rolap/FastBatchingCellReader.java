@@ -104,7 +104,7 @@ public class FastBatchingCellReader implements CellReader {
         this.aggMgr = aggMgr;
         cacheMgr = aggMgr.cacheMgr;
         pinnedSegments = this.aggMgr.createPinSet();
-        cacheEnabled = !MondrianProperties.instance().DisableCaching.get();
+        cacheEnabled = cube.getSchema().isCaching();
 
         cellRequestLimit =
             MondrianProperties.instance().CellBatchSize.get() <= 0
@@ -131,7 +131,7 @@ public class FastBatchingCellReader implements CellReader {
         }
 
         // If this query has not had any cache misses, it's worth doing a
-        // synchronous request for the cell segment. If it is in the cache, it
+        // synchronous request for the cel    l segment. If it is in the cache, it
         // will be worth the wait, because we can avoid the effort of batching
         // up requests that could have been satisfied by the same segment.
         if (cacheEnabled
@@ -620,7 +620,7 @@ class BatchLoader {
         final AggregationKey key,
         final SegmentBuilder.SegmentConverterImpl converter)
     {
-        if (MondrianProperties.instance().DisableCaching.get()) {
+        if (!request.getMeasure().getStar().getSchema().isCaching()) {
             // Caching is disabled. Return always false.
             return false;
         }

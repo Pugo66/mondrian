@@ -102,6 +102,13 @@ public interface Schema extends Annotated {
      * @return list of warnings
      */
     List<Exception> getWarnings();
+
+
+    /**
+     *  Determines whether caching is disabled for this schema.
+     *  @return true if caching is disabled, false otherwise.
+     */
+    boolean isCaching();
 }
 
 // End Schema.java

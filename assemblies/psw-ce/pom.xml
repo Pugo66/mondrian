@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd" xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>pentaho</groupId>
@@ -15,14 +15,14 @@
   <url>http://mondrian.pentaho.com</url>
   <properties>
     <jlfgr.version>1.0</jlfgr.version>
-    <pentaho-launcher.version>10.3.0.0-SNAPSHOT</pentaho-launcher.version>
+    <pentaho-launcher.version>9.4.0.0-SNAPSHOT</pentaho-launcher.version>
     <dependency.groovy-all.revision>2.4.21</dependency.groovy-all.revision>
-    <pdi-dataservice-client-plugin.version>10.3.0.0-SNAPSHOT</pdi-dataservice-client-plugin.version>
-    <oss-licenses.version>10.3.0.0-SNAPSHOT</oss-licenses.version>
+    <pdi-dataservice-client-plugin.version>9.4.0.0-SNAPSHOT</pdi-dataservice-client-plugin.version>
+    <oss-licenses.version>9.4.0.0-SNAPSHOT</oss-licenses.version>
     <dependency.jersey.revision>1.19.1</dependency.jersey.revision>
-    <pdi.version>10.3.0.0-SNAPSHOT</pdi.version>
-    <commons-xul.version>10.3.0.0-SNAPSHOT</commons-xul.version>
-    <mondrian-schemaworkbench-plugins.version>10.3.0.0-SNAPSHOT</mondrian-schemaworkbench-plugins.version>
+    <pdi.version>9.4.0.0-SNAPSHOT</pdi.version>
+    <commons-xul.version>9.4.0.0-SNAPSHOT</commons-xul.version>
+    <mondrian-schemaworkbench-plugins.version>9.4.0.0-SNAPSHOT</mondrian-schemaworkbench-plugins.version>
   </properties>
   <dependencies>
     <dependency>
@@ -230,7 +230,7 @@
       <groupId>jaxen</groupId>
       <artifactId>jaxen</artifactId>
     </dependency>
-    
+
     <!-- change bellow scope to runtime to include database drivers -->
     <dependency>
       <groupId>com.mysql</groupId>

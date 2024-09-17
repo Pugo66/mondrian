@@ -181,6 +181,8 @@ public class RolapSchema implements Schema {
    */
   private final String id;
 
+  private boolean isCaching;
+
   /**
    * This is ONLY called by other constructors (and MUST be called by them) and NEVER by the Pool.
    *
@@ -432,6 +434,11 @@ public class RolapSchema implements Schema {
     return Collections.unmodifiableList( warningList );
   }
 
+  @Override
+  public boolean isCaching() {
+    return isCaching;
+  }
+
   public Role getDefaultRole() {
     return defaultRole;
   }
@@ -485,6 +492,10 @@ public class RolapSchema implements Schema {
 
     if ( name == null || name.isEmpty() ) {
       throw Util.newError( "<Schema> name must be set" );
+    }
+
+    if (!MondrianProperties.instance().DisableCaching.get()) {
+      this.isCaching = xmlSchema.cache;
     }
 
     this.annotationMap = RolapHierarchy.createAnnotationMap( xmlSchema.annotations );
@@ -1129,7 +1140,7 @@ public class RolapSchema implements Schema {
       } else {
         LOGGER.debug( "Normal cardinality for {}", hierarchy.getDimension() );
 
-        if ( MondrianProperties.instance().DisableCaching.get() ) {
+        if (!isCaching() || MondrianProperties.instance().DisableCaching.get() ) {
           // If the cell cache is disabled, we can't cache the members or else we get undefined results, depending on
           // the functions used and all.
           return new NoCacheMemberReader( source );

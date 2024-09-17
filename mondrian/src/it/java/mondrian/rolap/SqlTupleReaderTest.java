@@ -41,11 +41,11 @@ public class SqlTupleReaderTest extends TestCase {
 
   public void testAddLevelMemberSql() throws Exception {
     TupleConstraint constraint = mock( TupleConstraint.class );
-    SqlQuery sqlQuery = mock( SqlQuery.class, Answers.RETURNS_MOCKS.get() );
+    SqlQuery sqlQuery = mock( SqlQuery.class, Answers.RETURNS_MOCKS);
     RolapCube baseCube = mock( RolapCube.class );
     RolapLevel targetLevel = mock( RolapLevel.class );
-    RolapCubeLevel levelIter = mock( RolapCubeLevel.class, Answers.RETURNS_MOCKS.get() );
-    RolapProperty rolapProperty = mock( RolapProperty.class, Answers.RETURNS_MOCKS.get() );
+    RolapCubeLevel levelIter = mock( RolapCubeLevel.class, Answers.RETURNS_MOCKS);
+    RolapProperty rolapProperty = mock( RolapProperty.class, Answers.RETURNS_MOCKS);
     String propertyName = "property_1";
     when( rolapProperty.getName() ).thenReturn( propertyName );
     RolapProperty[] properties = { rolapProperty };
@@ -53,18 +53,18 @@ public class SqlTupleReaderTest extends TestCase {
     when( levelIter.getKeyExp() ).thenReturn( mock( MondrianDef.Expression.class ) );
     when( levelIter.getOrdinalExp() ).thenReturn( mock( MondrianDef.Expression.class ) );
     when( levelIter.getParentExp() ).thenReturn( null );
-    RolapHierarchy hierarchy = mock( RolapHierarchy.class, Answers.RETURNS_MOCKS.get() );
+    RolapHierarchy hierarchy = mock( RolapHierarchy.class, Answers.RETURNS_MOCKS);
     when( targetLevel.getHierarchy() ).thenReturn( hierarchy );
     when( hierarchy.getLevels() ).thenReturn( new RolapLevel[] { levelIter } );
     SqlTupleReader.WhichSelect whichSelect = SqlTupleReader.WhichSelect.LAST;
-    JdbcSchema.Table dbTable = mock( JdbcSchema.Table.class, Answers.RETURNS_MOCKS.get() );
+    JdbcSchema.Table dbTable = mock( JdbcSchema.Table.class, Answers.RETURNS_MOCKS);
     when( dbTable.getColumnUsages( any() ) ).thenReturn( mock( Iterator.class ) );
     RolapStar star = mock( RolapStar.class );
     when( star.getColumnCount() ).thenReturn( 1 );
     AggStar aggStar = spy( AggStar.makeAggStar( star, dbTable, mock( MessageRecorder.class ), 10 ) );
-    AggStar.Table.Column column = mock( AggStar.Table.Column.class, Answers.RETURNS_MOCKS.get() );
+    AggStar.Table.Column column = mock( AggStar.Table.Column.class, Answers.RETURNS_MOCKS);
     doReturn( column ).when( aggStar ).lookupColumn( 0 );
-    RolapStar.Column starColumn = mock( RolapStar.Column.class, Answers.RETURNS_MOCKS.get() );
+    RolapStar.Column starColumn = mock( RolapStar.Column.class, Answers.RETURNS_MOCKS);
     when( starColumn.getBitPosition() ).thenReturn( 0 );
     doReturn( starColumn ).when( levelIter ).getStarKeyColumn();
     AggStar.FactTable factTable =

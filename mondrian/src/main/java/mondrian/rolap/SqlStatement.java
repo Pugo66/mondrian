@@ -140,7 +140,7 @@ public class SqlStatement {
 
       haveSemaphore = true;
       // Trace start of execution.
-      if ( RolapUtil.SQL_LOGGER.isDebugEnabled() ) {
+      if ( RolapUtil.SQL_LOGGER.isInfoEnabled() ) {
         StringBuilder sqllog = new StringBuilder();
         sqllog.append( id ).append( ": " ).append( locus.component ).append( ": executing sql [" );
 
@@ -151,7 +151,7 @@ public class SqlStatement {
 
         sqllog.append( sql );
         sqllog.append( ']' );
-        RolapUtil.SQL_LOGGER.debug( sqllog.toString() );
+        RolapUtil.SQL_LOGGER.info( sqllog.toString() );
       }
 
       // Execute hook.
@@ -235,10 +235,10 @@ public class SqlStatement {
       // Now handle this exception.
       throw handle( e );
     } finally {
-      RolapUtil.SQL_LOGGER.debug( "{}: {}", id, status );
+      RolapUtil.SQL_LOGGER.info( "{}: {}", id, status );
 
-      if ( RolapUtil.LOGGER.isDebugEnabled() ) {
-        RolapUtil.LOGGER.debug( "{}: executing sql [{}]{}", locus.component, sql, status );
+      if ( RolapUtil.LOGGER.isInfoEnabled() ) {
+        RolapUtil.LOGGER.info( "{}: executing sql [{}]{}", locus.component, sql, status );
       }
     }
   }

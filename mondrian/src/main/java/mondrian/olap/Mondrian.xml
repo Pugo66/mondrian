@@ -43,6 +43,14 @@ Revision is $Id$
                 Description of this schema.
             </Doc>
         </Attribute>
+        <Attribute name="cache" type="Boolean" default="true">
+            <Doc>
+                Should the Fact table data or the Dimension table for this Schema be cached
+                by Mondrian or not. The default action is to cache
+                the data.
+            </Doc>
+        </Attribute>
+
         <Attribute name="measuresCaption" required="false">
             <Doc>
                 Label for the measures dimension.

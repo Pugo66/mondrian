@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<Schema name="FoodMart">
+<Schema name="FoodMart" cache="false">
 <!--
   == This software is subject to the terms of the Eclipse Public License v1.0
   == Agreement, available at the following URL:
