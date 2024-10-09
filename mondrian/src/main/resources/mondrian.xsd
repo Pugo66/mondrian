@@ -622,28 +622,17 @@
         A VirtualCubeDimension is a usage of a Dimension in a VirtualCube.
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="cubeName" type="xs:string">
-      <xs:annotation>
-        <xs:documentation>
-          Name of the cube which the dimension belongs to, or unspecified if the dimension is shared.
-        </xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="name" type="xs:string" use="required">
-      <xs:annotation>
-        <xs:documentation>
-          Name of the dimension.
-        </xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
-    <xs:attribute name="visible" type="xs:boolean" default="true"> <!-- New -->
-      <xs:annotation>
-        <xs:documentation>
-          Whether this cube dimension is visible in the user-interface.
-          Default true.
-        </xs:documentation>
-      </xs:annotation>
-    </xs:attribute>
+    <xs:complexContent>
+      <xs:extension base="CubeDimensionType">
+        <xs:attribute name="cubeName" type="xs:string">
+          <xs:annotation>
+            <xs:documentation>
+              Name of the cube which the dimension belongs to, or unspecified if the dimension is shared.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:attribute>
+      </xs:extension>
+    </xs:complexContent>
   </xs:complexType>
 
   <xs:complexType name="VirtualCubeMeasureType">
@@ -928,7 +917,7 @@
           This attribute is deprecated. Please use a nested MemberFormatter element.
 
           Name of a formatter class for the member labels being displayed.
-          The class must implement the mondrian.olap.MemberFormatter interface.
+          The class must implement the mondrian.spi.MemberFormatter interface.
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -1024,8 +1013,8 @@
       <xs:element name="PropertyFormatter" type="PropertyFormatterType" minOccurs="0"/> <!-- New -->
     </xs:sequence>
 
-    <xs:attribute name="name" type="xs:string" use="required" /> <!-- TODO optional in MondrianDef -->
-    <xs:attribute name="column" type="xs:string" use="required" /> <!-- TODO optional in MondrianDef -->
+    <xs:attribute name="name" type="xs:string" use="required" />
+    <xs:attribute name="column" type="xs:string" use="required" /> <!-- Despite being replaced by the script content when that is defined, not specifying a column will turn into an error at Report execution time in Analyzer -->
     <xs:attribute name="type" default="String">
       <xs:annotation>
         <xs:documentation>
@@ -1162,7 +1151,7 @@
           This attribute is deprecated. Please use a nested CellFormatter element.
 
           Name of a formatter class for the member labels being displayed.
-          The class must implement the mondrian.olap.CellFormatter interface.
+          The class must implement the mondrian.spi.CellFormatter interface.
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
@@ -1267,7 +1256,7 @@
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="visible" type="xs:boolean" default="true"> <!-- TODO XOM does not define a default value. MondrianDef will use the Boolean constructor which will return false for null values. However the default value should be true...  Some XOM elements define true as the default value. Check "visible" attributes of other elements -->
+    <xs:attribute name="visible" type="xs:boolean" default="true">
       <xs:annotation>
         <xs:documentation>
           Whether this member is visible in the user-interface. Default true.
@@ -1430,7 +1419,7 @@
   </xs:complexType>
 
   <xs:complexType name="SQLType" mixed="true">
-    <xs:attribute name="dialect" type="xs:string" default="generic"> <!-- TODO in XSD was as required without default value -->
+    <xs:attribute name="dialect" type="xs:string" default="generic">
       <xs:annotation>
         <xs:documentation>
           Dialect of SQL the view is intended for. Valid values include, but are not limited to:
@@ -1489,7 +1478,7 @@
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="leftKey" type="xs:string" use="required"/> <!-- TODO required by XOM not required in old xsd -->
+    <xs:attribute name="leftKey" type="xs:string" use="required"/>
     <xs:attribute name="rightAlias" type="xs:string">
       <xs:annotation>
         <xs:documentation>
@@ -1497,7 +1486,7 @@
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="rightKey" type="xs:string" use="required"/> <!-- TODO required by XOM not required in old xsd -->
+    <xs:attribute name="rightKey" type="xs:string" use="required"/>
 
   </xs:complexType>
 
@@ -1573,8 +1562,16 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="SchemaGrant" type="SchemaGrantType" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="Union" type="UnionType" minOccurs="0"/>
+      <xs:choice minOccurs="0" maxOccurs="1">
+        <!-- SchemaGrant or Union -->
+        <xs:annotation>
+          <xs:documentation>
+            Schema Grant or Union
+          </xs:documentation>
+        </xs:annotation>
+        <xs:element name="SchemaGrant" type="SchemaGrantType" maxOccurs="unbounded"/>
+        <xs:element name="Union" type="UnionType" maxOccurs="unbounded"/>
+      </xs:choice>
       <xs:element name="RoleMember" type="RoleMemberType" minOccurs="0" maxOccurs="unbounded" /> <!-- TODO only present in XOM -->
     </xs:sequence>
 
@@ -1592,7 +1589,6 @@
       <xs:simpleType>
         <xs:restriction base="xs:string">
           <xs:enumeration value="all"/>
-          <xs:enumeration value="all-dimensions"/>
           <xs:enumeration value="custom"/>
           <xs:enumeration value="none"/>
         </xs:restriction>
@@ -1601,26 +1597,33 @@
   </xs:complexType>
 
   <xs:complexType name="SchemaGrantType">
-    <xs:complexContent>
-      <xs:extension base="GrantType"> <!-- TODO in mondrian.xsd access only allows values "all" and "none" -->
-        <xs:annotation>
-          <xs:documentation>
-            Grants (or denies) this role access to this schema. access may be "all", "all_dimensions", or "none".
-            If access is "all_dimensions", the role has access to all dimensions but still needs explicit access to cubes.
-            See mondrian.olap.Role#grant(mondrian.olap.Schema,int).
-          </xs:documentation>
-        </xs:annotation>
+    <xs:annotation>
+      <xs:documentation>
+        Grants (or denies) this role access to this schema. access may be "all", "all_dimensions", "custom" or "none".
+        If access is "all_dimensions", the role has access to all dimensions but still needs explicit access to cubes.
+        See mondrian.olap.Role#grant(mondrian.olap.Schema,int).
+      </xs:documentation>
+    </xs:annotation>
 
-        <xs:sequence>
-          <xs:element name="CubeGrant" type="CubeGrantType" minOccurs="0" maxOccurs="unbounded"/>
-        </xs:sequence>
-      </xs:extension>
-    </xs:complexContent>
+    <xs:sequence>
+      <xs:element name="CubeGrant" type="CubeGrantType" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+
+    <xs:attribute name="access" use="required">
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="all"/>
+          <xs:enumeration value="all_dimensions"/>
+          <xs:enumeration value="custom"/>
+          <xs:enumeration value="none"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="CubeGrantType">
     <xs:complexContent>
-      <xs:extension base="GrantType"> <!-- TODO in mondrian.xsd access only allows values "all" and "none" -->
+      <xs:extension base="GrantType">
         <xs:annotation>
           <xs:documentation>
             Grants (or denies) this role access to a cube.
@@ -1651,7 +1654,7 @@
 
   <xs:complexType name="DimensionGrantType">
     <xs:complexContent>
-      <xs:extension base="GrantType"> <!-- TODO in mondrian.xsd access only allows values "all" and "none" -->
+      <xs:extension base="GrantType">
         <xs:annotation>
           <xs:documentation>
             Grants (or denies) this role access to a dimension.
@@ -1666,7 +1669,7 @@
             See <a href="api/mondrian/olap/Role.html#grant(mondrian.olap.Dimension, int)">mondrian.olap.Role#grant(mondrian.olap.Dimension,int)</a>.
           </xs:documentation>
         </xs:annotation>
-        <xs:attribute name="dimension" type="xs:string" use="required"> <!-- TODO required in mondrian.xsd -->
+        <xs:attribute name="dimension" type="xs:string" use="required">
           <xs:annotation>
             <xs:documentation>
               The unique name of the dimension
@@ -1679,7 +1682,7 @@
 
   <xs:complexType name="HierarchyGrantType">
     <xs:complexContent>
-      <xs:extension base="GrantType"> <!-- TODO in mondrian.xsd access only allows values "all" and "none" -->
+      <xs:extension base="GrantType">
         <xs:annotation>
           <xs:documentation>
             Grants (or denies) this role access to a hierarchy.
@@ -1767,7 +1770,7 @@
         </xs:restriction>
       </xs:simpleType>
     </xs:attribute>
-    <xs:attribute name="member" type="xs:string" use="required"> <!-- TODO only required in XOM -->
+    <xs:attribute name="member" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation>
           The unique name of the member
@@ -1804,7 +1807,7 @@
         Usage of a Role in a union Role.
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="roleName" type="xs:string" use="required"/> <!-- TODO not required in mondrian.xsd -->
+    <xs:attribute name="roleName" type="xs:string" use="required"/>
   </xs:complexType>
 
   <xs:complexType name="UserDefinedFunctionType">
@@ -1841,7 +1844,7 @@
 
   </xs:complexType>
 
-  <xs:complexType name="ScriptType">
+  <xs:complexType name="ScriptType" mixed="true">
     <xs:annotation>
       <xs:documentation>
         Script fragment to implement an SPI such as user-defined function,
@@ -1860,7 +1863,7 @@
     </xs:attribute>
   </xs:complexType>
 
-  <xs:complexType name="ElementFormatterType" abstract="true"> <!--TODO does not exist in mondrian.xsd -->
+  <xs:complexType name="ElementFormatterType" abstract="true">
     <xs:annotation>
       <xs:documentation>
         Abstract type just in order to avoid duplication.
@@ -1885,7 +1888,7 @@
 
   </xs:complexType>
 
-  <xs:complexType name="CellFormatterType"> <!--TODO does not add anything to ElementFormatterType. Can probably be deleted for simplification. -->
+  <xs:complexType name="CellFormatterType">
     <xs:annotation>
       <xs:documentation>
         Plugin that formats the values of cells.
@@ -1900,7 +1903,7 @@
     </xs:complexContent>
   </xs:complexType>
 
-  <xs:complexType name="MemberFormatterType"> <!--TODO does not add anything to ElementFormatterType. Can probably be deleted for simplification. -->
+  <xs:complexType name="MemberFormatterType">
     <xs:annotation>
       <xs:documentation>
         Plugin that formats members.
@@ -1915,7 +1918,7 @@
     </xs:complexContent>
   </xs:complexType>
 
-  <xs:complexType name="PropertyFormatterType"> <!--TODO does not add anything to ElementFormatterType. Can probably be deleted for simplification. -->
+  <xs:complexType name="PropertyFormatterType">
     <xs:annotation>
       <xs:documentation>
         Plugin that formats properties.
@@ -1936,12 +1939,11 @@
       <xs:element name="Rows" type="RowsType" minOccurs="1" maxOccurs="1"/>
     </xs:sequence>
 
-    <xs:attribute name="alias" type="xs:string"> <!--TODO not present in mondrian.xsd -->
+    <xs:attribute name="alias" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation>
           Alias to be used with this table when it is used to
-          form queries. If not specified, defaults to the table
-          name, but in any case, must be unique within the
+          form queries. It must be unique within the
           schema. (You can use the same table in different
           hierarchies, but it must have different aliases.)
         </xs:documentation>
@@ -1957,7 +1959,7 @@
       </xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="ColumnDef" type="ColumnDefType" minOccurs="1" maxOccurs="unbounded"/> <!-- TODO minOccurs 1 in mondrian.xsd -->
+      <xs:element name="ColumnDef" type="ColumnDefType" minOccurs="1" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 
@@ -1967,14 +1969,14 @@
         Column definition for an inline table.
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="name" type="xs:string" use="required"> <!-- TODO not required in mondrian.xsd -->
+    <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation>
           Name of the column.
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="type" use="required"> <!-- TODO not required in mondrian.xsd -->
+    <xs:attribute name="type" use="required">
       <xs:annotation>
         <xs:documentation>
           Type of the column:
@@ -2002,7 +2004,7 @@
       </xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="Row" type="RowType" minOccurs="1" maxOccurs="unbounded"/> <!-- TODO minOccurs 1 in mondrian.xsd -->
+      <xs:element name="Row" type="RowType" minOccurs="1" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 
@@ -2014,18 +2016,18 @@
       </xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:element name="Value" type="ValueType" minOccurs="1" maxOccurs="unbounded"/> <!-- TODO minOccurs 1 in mondrian.xsd -->
+      <xs:element name="Value" type="ValueType" minOccurs="1" maxOccurs="unbounded"/>
     </xs:sequence>
   </xs:complexType>
 
-  <xs:complexType name="ValueType">
+  <xs:complexType name="ValueType" mixed="true">
     <xs:annotation>
       <xs:documentation>
         Column value for an inline table.
         The CDATA holds the value of the column.
       </xs:documentation>
     </xs:annotation>
-    <xs:attribute name="column" type="xs:string" use="required"> <!-- TODO not required in mondrian.xsd but required in MondrianXOM.xml -->
+    <xs:attribute name="column" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation>
           Name of the column.
@@ -2049,17 +2051,24 @@
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="rollupType" type="xs:string"> <!-- TODO not present in mondrian.xsd -->
+    <xs:attribute name="rollupType"> <!-- New -->
       <xs:annotation>
-        <xs:documentation> <!-- TODO should this be an enum? it is a plain string in XOM-->
+        <xs:documentation>
           Explicitly define rollup type. Available types: AvgFromSum, AvgFromAvg, SumFromAvg.
           Will be ignored if wrong type is chosen.
         </xs:documentation>
       </xs:annotation>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="AvgFromSum"/>
+          <xs:enumeration value="AvgFromAvg"/>
+          <xs:enumeration value="SumFromAvg"/>
+        </xs:restriction>
+      </xs:simpleType>
     </xs:attribute>
   </xs:complexType>
 
-  <xs:complexType name="AggLevelPropertyType"> <!-- TODO not present in mondrian.xsd -->
+  <xs:complexType name="AggLevelPropertyType"> <!-- New -->
     <xs:annotation>
       <xs:documentation>
         Member property.
@@ -2076,19 +2085,19 @@
 
     <xs:attribute name="column" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation> <!-- TODO different comment in mondrian.xsd -->
+        <xs:documentation>
           The name of the column mapping to the level name.
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="ordinalColumn" type="xs:string"> <!-- TODO not present in mondrian.xsd -->
+    <xs:attribute name="ordinalColumn" type="xs:string"> <!-- New -->
       <xs:annotation>
         <xs:documentation>
           The ordinal column for this level.
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="captionColumn" type="xs:string"> <!-- TODO not present in mondrian.xsd -->
+    <xs:attribute name="captionColumn" type="xs:string"> <!-- New -->
       <xs:annotation>
         <xs:documentation>
           The name of the database column that holds the caption for this level.
@@ -2097,12 +2106,12 @@
     </xs:attribute>
     <xs:attribute name="name" type="xs:string" use="required">
       <xs:annotation>
-        <xs:documentation> <!-- TODO different comment in mondrian.xsd -->
+        <xs:documentation>
           The name of the Dimension Hierarchy level.
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="nameColumn" type="xs:string"> <!-- TODO not present in mondrian.xsd -->
+    <xs:attribute name="nameColumn" type="xs:string"> <!-- New -->
       <xs:annotation>
         <xs:documentation>
           The name of the column which holds the user identifier of
@@ -2110,7 +2119,7 @@
         </xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="collapsed" type="xs:boolean" default="true"> <!-- TODO not present in mondrian.xsd -->
+    <xs:attribute name="collapsed" type="xs:boolean" default="true"> <!-- New -->
       <xs:annotation>
         <xs:documentation>
           Whether this is a collapsed level. The parents of that level
@@ -2185,7 +2194,7 @@
           </xs:documentation>
         </xs:annotation>
       </xs:element>
-      <xs:element name="AggMeasureFactCount" type="AggMeasureFactCountType" minOccurs="0" maxOccurs="unbounded"> <!-- TODO not present in mondrian.xsd -->
+      <xs:element name="AggMeasureFactCount" type="AggMeasureFactCountType" minOccurs="0" maxOccurs="unbounded"> <!-- New -->
         <xs:annotation>
           <xs:documentation>
             What does the fact_count column look like.
@@ -2194,7 +2203,7 @@
       </xs:element>
       <xs:element name="AggIgnoreColumn" type="AggColumnNameType" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="AggForeignKey" type="AggForeignKeyType" minOccurs="0" maxOccurs="unbounded"/>
-      <xs:element name="AggMeasure" type="AggMeasureType" minOccurs="1" maxOccurs="unbounded"/> <!-- TODO minOccurs 1 in mondrian.xsd -->
+      <xs:element name="AggMeasure" type="AggMeasureType" minOccurs="1" maxOccurs="unbounded"/>
       <xs:element name="AggLevel" type="AggLevelType" minOccurs="0" maxOccurs="unbounded"/>
     </xs:sequence>
 
@@ -2218,7 +2227,7 @@
             </xs:documentation>
           </xs:annotation>
         </xs:attribute>
-        <xs:attribute name="approxRowCount" type="xs:string" use="required"> <!--TODO not present in mondrian.xsd -->
+        <xs:attribute name="approxRowCount" type="xs:string" use="required"> <!-- New -->
           <xs:annotation>
             <xs:documentation>
               The estimated number of rows in this aggregation
@@ -2259,8 +2268,14 @@
     </xs:choice>
   </xs:group>
 
-  <xs:complexType name="AggColumnNameType"> <!-- TODO no longer abstract, as it was in XOM, to use in AggFactCountType's place -->
-    <xs:attribute name="column" type="xs:string" use="required" /> <!-- TODO Didn't add comment from MondrianXOM, as it seems to belong to one of the subclasses -->
+  <xs:complexType name="AggColumnNameType">
+    <xs:attribute name="column" type="xs:string" use="required">
+      <xs:annotation>
+        <xs:documentation>
+          The aggregation table's column name
+        </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
   </xs:complexType>
 
   <xs:complexType name="AggMeasureFactCountType">
@@ -2277,7 +2292,7 @@
       </xs:complexContent>
   </xs:complexType>
 
-  <xs:complexType name="ExpressionViewType"> <!-- TODO used this type for subclasses that were not adding anything -->
+  <xs:complexType name="ExpressionViewType">
     <xs:annotation>
       <xs:documentation>
         A collection of SQL expressions, one per dialect.
